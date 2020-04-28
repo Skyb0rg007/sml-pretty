@@ -204,7 +204,7 @@ let
         if Substring.size sub = 0
         then []
         else
-            let val (pre, rest) = Substring.splitl (fn c => c = #"\n") sub
+            let val (pre, rest) = Substring.splitl (fn c => c <> #"\n") sub
             in Substring.string pre :: spliton_newline (Substring.triml 1 rest)
             end
 in
