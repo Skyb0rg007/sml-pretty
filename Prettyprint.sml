@@ -327,7 +327,7 @@ struct
       layoutWadlerLeijen (fn (_, _, w, sd) => fits (w, sd), pWidth, x)
     end
 
-    fun render SFail = raise Fail "»SFail« must not appear in a rendered »SimpleDocStream«. This is a bug in the layout algorithm!"
+    fun render SFail = raise Fail "SFail must not appear in a rendered SimpleDocStream. This is a bug in the layout algorithm!"
       | render SEmpty = ""
       | render (SChar (c, x)) = String.str c ^ render x
       | render (SText (t, x)) = t ^ render x

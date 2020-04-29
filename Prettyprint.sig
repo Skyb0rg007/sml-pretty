@@ -47,9 +47,9 @@ val indent : int * 'a doc -> 'a doc
 
 (*** Binary functions *)
 (* Concatenates documents *)
-val op++ : 'a doc * 'a doc -> 'a doc
+val ++ : 'a doc * 'a doc -> 'a doc
 (* Concatenates with a space in between *)
-val op<+> : 'a doc * 'a doc -> 'a doc
+val <+> : 'a doc * 'a doc -> 'a doc
 
 (*** List functions *)
 (* Concatenate with a given concatenation function *)

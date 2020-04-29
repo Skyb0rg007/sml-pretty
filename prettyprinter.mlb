@@ -1,0 +1,12 @@
+(* vim: set ft=sml: *)
+
+local
+  $(SML_LIB)/basis/basis.mlb
+in
+  Prettyprint.sig
+  Prettyprint.sml
+  Ansi.sig
+  Ansi.sml
+  infixes.sml
+end
+

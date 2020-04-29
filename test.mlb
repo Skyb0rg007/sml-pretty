@@ -1,0 +1,8 @@
+(* vim: set ft=sml: *)
+
+local
+  $(SML_LIB)/basis/basis.mlb
+  prettyprinter.mlb
+in
+  test.sml
+end

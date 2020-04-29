@@ -37,6 +37,8 @@ struct
 
   val empty = { foreground = NONE, background = NONE, bold = false, italics = false, underline = false }
 
+  fun concat styles = List.foldr op+ empty styles
+
   fun color c = { foreground = SOME (Vivid, c), background = NONE, bold = false, italics = false, underline = false } 
   fun bgColor c = { foreground = NONE, background = SOME (Vivid, c), bold = false, italics = false, underline = false } 
   fun colorDull c = { foreground = SOME (Dull, c), background = NONE, bold = false, italics = false, underline = false } 
@@ -57,28 +59,28 @@ struct
        | Cyan    => 6
        | White   => 7
 
-    val codes = ref [0]
-    fun push x = codes := x :: !codes
+    fun print_code n = TextIO.output (out, ";" ^ Int.toString n)
+    fun print_str s = TextIO.output (out, s)
   in
+    print_str "\027[0";
     case foreground
-      of SOME (Vivid, c) => push (Int.+ (90, color_to_code c))
-       | SOME (Dull, c) => push (Int.+ (30, color_to_code c))
+      of SOME (Vivid, c) => print_code (Int.+ (90, color_to_code c))
+       | SOME (Dull, c) => print_code (Int.+ (30, color_to_code c))
        | NONE => ();
     case background
-      of SOME (Vivid, c) => push (Int.+ (100, color_to_code c))
-       | SOME (Dull, c) => push (Int.+ (40, color_to_code c))
+      of SOME (Vivid, c) => print_code (Int.+ (100, color_to_code c))
+       | SOME (Dull, c) => print_code (Int.+ (40, color_to_code c))
        | NONE => ();
     if bold
-      then push 1
-      else push 22;
+      then print_code 1
+      else print_code 22;
     if italics
-      then push 3
-      else push 23;
+      then print_code 3
+      else print_code 23;
     if underline
-      then push 4
-      else push 24;
-    TextIO.output1 (out, Char.chr 27);
-    TextIO.output (out, "[" ^ String.concatWith ";" (map Int.toString (List.rev (!codes))) ^ "m")
+      then print_code 4
+      else print_code 24;
+    print_str "m"
   end
 
   fun renderIO (out, sds) =

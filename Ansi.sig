@@ -3,7 +3,8 @@ signature Ansi =
 sig
 
   type style
-  val op+ : style * style -> style
+  val + : style * style -> style
+  val concat : style list -> style
   val empty : style
 
   datatype color =
