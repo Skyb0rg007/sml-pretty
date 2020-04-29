@@ -11,9 +11,11 @@ datatype exp
     | Var of string
     | Let of (string * exp) list * exp
 
+datatype ann = Red | Blue | Green
+
 fun pretty_exp x = case x
     of App (a, b) => str "(" ++ pretty_exp a <+> pretty_exp b ++ str ")"
-     | Abs (a, b) => str "(\\" ++ str a ++ str "." <+>  (pretty_exp b) ++ str ")"
+     | Abs (a, b) => str "(" ++ annotate (Ansi.color Ansi.Green, str "\\") ++ str a ++ str "." <+>  (pretty_exp b) ++ str ")"
      | Int n => str (Int.toString n)
      | Var s => str s
      | Let (decs, e) => 
@@ -24,6 +26,6 @@ fun pretty_exp x = case x
         end
 
 val exp = Abs ("x", Let ([("foo", Abs ("y", Var "y"))], App (Var "foo", Int 1)))
-val doc : unit doc = pretty_exp exp 
-val _ = print (render_string (layoutPretty (Unbounded, doc)) ^ "\n")
+val doc = pretty_exp exp 
+val () = Ansi.renderIO (TextIO.stdOut, layoutPretty (PageWidth.default, doc))
 handle Fail msg => print ("Fail: " ^ msg ^ "\n")

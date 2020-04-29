@@ -5,9 +5,13 @@ sig
 (* Document type, with typed annotations *)
 type 'a doc
 (* Width of the page to render *)
-datatype pagewidth = 
-      AvailablePerLine of { line_length: int, ribbon_fraction: real } (* Number of chars (default 80), ribbon width (default 1) *)
+structure PageWidth:
+sig
+  datatype t = 
+      AvailablePerLine of { line_length: int, ribbon_fraction: real }
     | Unbounded (* Never introduces linebreaks *)
+  val default : t
+end
 
 (*** Basic functionality *)
 (* Convert a string into a document *)
@@ -79,7 +83,7 @@ val nesting : (int -> 'a doc) -> 'a doc
 (* Layout a document, allowing access to the current column width *)
 val width : 'a doc * (int -> 'a doc) -> 'a doc
 (* Layout a document depending on the page width *)
-val pageWidth : (pagewidth -> 'a doc) -> 'a doc
+val pageWidth : (PageWidth.t -> 'a doc) -> 'a doc
 
 (*** Fillers *)
 (* [fill (i, x)] Lays out the document x, then appends spaces until width is i. *)
@@ -102,18 +106,54 @@ val alterAnnotations : ('a -> 'b list) -> 'a doc -> 'b doc
 
 structure DocStream:
 sig
-    datatype 'a t =
-        SFail
-      | SEmpty
-      | SChar of char * 'a t
-      | SText of string * 'a t
-      | SLine of int * 'a t
-      | SAnnPush of 'a * 'a t
-      | SAnnPop of 'a t
+  datatype 'a t =
+      SFail
+    | SEmpty
+    | SChar of char * 'a t
+    | SText of string * 'a t
+    | SLine of int * 'a t
+    | SAnnPush of 'a * 'a t
+    | SAnnPop of 'a t
 
-    val layoutPretty : pagewidth * 'a doc -> 'a t
+  (*** Annotations *)
+  (* Remove annotation (Note: slow) *)
+  val unAnnotate : 'a t -> 'b t
+  (* Modify annotations *)
+  val reAnnotate : ('a -> 'b) -> 'a t -> 'b t
+  (* Generalized reAnnotate *)
+  val alterAnnotations : ('a -> 'b option) -> 'a t -> 'b t
 
-    val render_string : 'a t -> string
+  (* Default layout algorithm *)
+  val layoutPretty : PageWidth.t * 'a doc -> 'a t
+
+  (* Convert to a string *)
+  val render : 'a t -> string
+  (* Render to the screen *)
+  val renderIO : TextIO.outstream * 'a t -> unit
+
+end
+
+structure DocTree:
+sig
+  datatype 'a t =
+      TEmpty
+    | TChar of char
+    | TText of string
+    | TLine of int
+    | TAnn of 'a * 'a t
+    | TConcat of 'a t list
+
+  (*** Annotations *)
+  (* Remove annotations *)
+  val unAnnotate : 'a t -> 'b t
+  (* Modify annotations *)
+  val reAnnotate : ('a -> 'b) -> 'a t -> 'b t
+  (* Generalized reAnnotate *)
+  val alterAnnotations : ('a -> 'b list) -> 'a t -> 'b t
+
+  (* Convert to the DocTree format from the DocStream format *)
+  val fromStream : 'a DocStream.t -> 'a t
+
 end
 
 end

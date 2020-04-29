@@ -1,18 +1,27 @@
+
 MOSMLC = mosmlc -liberal
 
-all: prettyprint.ui prettyprint.uo
+all: test
 
-prettyprint.ui: prettyprint.sig
+.SUFFIXES: .ui .uo .sig .sml
+
+.sig.ui:
+	$(MOSMLC) -structure -c $<
+.sml.uo:
 	$(MOSMLC) -structure -c $<
 
-prettyprint.uo: prettyprint.sml prettyprint.ui
-	$(MOSMLC) -structure -c $<
-
-test.uo: test.sml prettyprint.ui
+test.uo: test.sml
 	$(MOSMLC) -toplevel -c $<
 
-test: prettyprint.uo test.uo
+test: Prettyprint.uo Ansi.uo test.uo
 	$(MOSMLC) $^ -o test
 
 clean:
 	$(RM) *.uo *.ui test
+
+Prettyprint.ui:
+Prettyprint.uo: Prettyprint.ui
+Ansi.ui: Prettyprint.ui
+Ansi.uo: Prettyprint.ui Ansi.ui
+test.uo: Prettyprint.ui Ansi.ui
+
