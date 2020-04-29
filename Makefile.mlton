@@ -1,0 +1,31 @@
+
+MLTON = mlton
+RM = rm -f
+RM_D = rm -df
+MKDIR = mkdir -p
+
+BUILDDIR = _build
+
+##
+
+.DEFAULT: all
+.PHONY: clean
+.SUFFIXES:
+
+all:
+
+test: $(BUILDDIR)/test
+	@case $(BUILDDIR) in         \
+		/*) $(BUILDDIR)/test ;;  \
+		*) ./$(BUILDDIR)/test ;; \
+	esac
+
+clean:
+	$(RM) $(BUILDDIR)/test
+	$(RM_D) $(BUILDDIR)
+
+$(BUILDDIR)/test: src/*.sig src/*.sml test/test.sml prettyprinter.mlb test.mlb
+	@$(MKDIR) $(BUILDDIR)
+	$(MLTON) -output $(BUILDDIR)/test test.mlb
+
+

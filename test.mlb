@@ -4,5 +4,5 @@ local
   $(SML_LIB)/basis/basis.mlb
   prettyprinter.mlb
 in
-  test.sml
+  test/test.sml
 end

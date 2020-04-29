@@ -1,0 +1,47 @@
+
+MOSMLC = mosmlc -orthodox -I ../$(BUILDDIR)
+RM = rm -f
+RM_D = rm -fd
+MKDIR = mkdir -p
+MV = mv
+
+BUILDDIR = _build
+
+##
+
+.DEFAULT: all
+.PHONY: clean test
+.SUFFIXES: 
+
+all: $(BUILDDIR)/Prettyprint.uo $(BUILDDIR)/Ansi.uo
+
+test: $(BUILDDIR)/test
+	@case $(BUILDDIR) in         \
+		/*) $(BUILDDIR)/test ;;  \
+		*) ./$(BUILDDIR)/test ;; \
+	esac
+
+clean:
+	$(RM) $(BUILDDIR)/*.ui $(BUILDDIR)/*.uo $(BUILDDIR)/test
+	$(RM_D) $(BUILDDIR)
+
+$(BUILDDIR)/Prettyprint.ui: src/Prettyprint.sig
+	@$(MKDIR) $(BUILDDIR)
+	cd src && $(MOSMLC) -c Prettyprint.sig
+	$(MV) src/Prettyprint.ui $(BUILDDIR)
+$(BUILDDIR)/Prettyprint.uo: src/Prettyprint.sml $(BUILDDIR)/Prettyprint.ui
+	cd src && $(MOSMLC) -c Prettyprint.sml
+	$(MV) src/Prettyprint.uo $(BUILDDIR)
+$(BUILDDIR)/Ansi.ui: src/Ansi.sig $(BUILDDIR)/Prettyprint.ui
+	cd src && $(MOSMLC) -c Ansi.sig
+	$(MV) src/Ansi.ui $(BUILDDIR)
+$(BUILDDIR)/Ansi.uo: src/Ansi.sml $(BUILDDIR)/Prettyprint.ui $(BUILDDIR)/Ansi.ui
+	cd src && $(MOSMLC) -c Ansi.sml
+	$(MV) src/Ansi.uo $(BUILDDIR)
+
+$(BUILDDIR)/test.ui $(BUILDDIR)/test.uo: test/test.sml $(BUILDDIR)/Prettyprint.ui $(BUILDDIR)/Ansi.ui
+	cd test && $(MOSMLC) -toplevel -c test.sml
+	$(MV) test/test.ui test/test.uo $(BUILDDIR)
+$(BUILDDIR)/test: $(BUILDDIR)/Prettyprint.uo $(BUILDDIR)/Ansi.uo $(BUILDDIR)/test.uo
+	$(MOSMLC) $(BUILDDIR)/Prettyprint.uo $(BUILDDIR)/Ansi.uo $(BUILDDIR)/test.uo -o $(BUILDDIR)/test
+
