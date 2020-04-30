@@ -1,28 +1,30 @@
 structure Prettyprint :> Prettyprint =
 struct
 
+  (* Recommend using these precedences when using this library *)
   infixr 6 ++ <+>
 
   structure PageWidth =
   struct
-    datatype t = AvailablePerLine of { line_length: int, ribbon_fraction: real }
+    datatype t = AvailablePerLine of { line_length: int, ribbon_width: real }
                | Unbounded
-    val default = AvailablePerLine { line_length = 80, ribbon_fraction = 1.0 }
+    val default = AvailablePerLine { line_length = 80, ribbon_width = 1.0 }
   end
 
-  datatype 'a doc = Failure (* Reject this document *)
+  (* Documents with annotations 'a *)
+  datatype 'a doc = Failure (* Reject this document. Used internally by library functions. *)
                   | Empty (* The empty document *)
-                  | Char of char (* A single character. Not a newline *)
-                  | Text of string (* String. Length > 1, no newlines *)
-                  | Line (* Hard line break *)
-                  | FlatAlt of 'a doc * 'a doc (* First doc, except when grouped. Then second doc *)
+                  | Char of char (* A single character. Invariant: not a newline *)
+                  | Text of string (* String. Invariant: length > 1, no newlines *)
+                  | Line (* Hard line break. *)
+                  | FlatAlt of 'a doc * 'a doc (* First doc, except when grouped. Then second doc. *)
                   | Cat of 'a doc * 'a doc (* Concatenation of docs *)
                   | Nest of int * 'a doc (* Nest a number of spaces *)
                   | Union of 'a doc * 'a doc (* Invariant: first line of 1st doc is longer than first line of second doc *)
-                  | Column of int -> 'a doc
-                  | WithPageWidth of PageWidth.t -> 'a doc
-                  | Nesting of int -> 'a doc 
-                  | Annotated of 'a * 'a doc
+                  | Column of int -> 'a doc (* Document that depends on the current column *)
+                  | WithPageWidth of PageWidth.t -> 'a doc (* Document that depends on the page width *)
+                  | Nesting of int -> 'a doc (* Document that depends on the current nesting level *)
+                  | Annotated of 'a * 'a doc (* Annotated document *)
 
   structure Flattened =
   struct
@@ -277,7 +279,7 @@ struct
       and select_nicer (lineIndent, currentColumn, x, y) =
         case pWidth
           of PageWidth.Unbounded => if not (fails_on_first_line x) then x else y
-           | PageWidth.AvailablePerLine {line_length, ribbon_fraction} =>
+           | PageWidth.AvailablePerLine {line_length, ribbon_width} =>
                let
                  val minNestingLevel =
                    case initial_indentation y
@@ -285,7 +287,7 @@ struct
                       | NONE => currentColumn
                  val columnsLeftInLine = line_length - currentColumn
                  fun clamp (min, max) x = Int.min (min, Int.max (max, x))
-                 val ribbonWidth = clamp (0, line_length) (Real.round (Real.fromInt line_length * ribbon_fraction))
+                 val ribbonWidth = clamp (0, line_length) (Real.round (Real.fromInt line_length * ribbon_width))
                  val columnsLeftInRibbon = lineIndent + ribbonWidth - currentColumn
                  val availableWidth = Int.min (columnsLeftInLine, columnsLeftInRibbon)
                in
@@ -327,24 +329,72 @@ struct
       layoutWadlerLeijen (fn (_, _, w, sd) => fits (w, sd), pWidth, x)
     end
 
-    fun render SFail = raise Fail "SFail must not appear in a rendered SimpleDocStream. This is a bug in the layout algorithm!"
-      | render SEmpty = ""
-      | render (SChar (c, x)) = String.str c ^ render x
-      | render (SText (t, x)) = t ^ render x
-      | render (SLine (i, x)) = "\n" ^ CharVector.tabulate (i, fn _ => #" ") ^ render x
-      | render (SAnnPush (_, x)) = render x
-      | render (SAnnPop x) = render x
+    fun layoutSmart (pWidth, x) =
+    let
+      fun fits (pw, m, w, sds) =
+        if w < 0 
+        then false
+        else 
+          case sds 
+            of SFail => false
+             | SEmpty => false
+             | SChar (_, rest) => fits (pw, m, w-1, rest)
+             | SText (t, rest) => fits (pw, m, w - String.size t, rest)
+             | SLine (i, rest) =>
+                (case pw
+                   of PageWidth.AvailablePerLine {line_length, ribbon_width = _} =>
+                        if m < i then fits (pw, m, line_length - i, rest) else true
+                    | _ => true)
+             | SAnnPush (_, rest) => fits (pw, m, w, rest)
+             | SAnnPop rest => fits (pw, m, w, rest)
+    in
+      layoutWadlerLeijen (fits, pWidth, x)
+    end
+
+    fun layoutCompact doc =
+    let
+      fun scan (_, []) = SEmpty
+        | scan (col, d::ds) =
+            case d
+              of Failure => SFail
+               | Empty => scan (col, ds)
+               | Char c => SChar (c, scan (col + 1, ds))
+               | Text t => SText (t, scan (col + String.size t, ds))
+               | FlatAlt (x, _) => scan (col, x::ds)
+               | Line => SLine (0, scan (0, ds))
+               | Cat (x, y) => scan (col, x::y::ds)
+               | Nest (_, x) => scan (col, x::ds)
+               | Union (_, y) => scan (col, y::ds)
+               | Column f => scan (col, f col::ds)
+               | WithPageWidth f => scan (col, f PageWidth.Unbounded::ds)
+               | Nesting f => scan (col, f 0::ds)
+               | Annotated (_, rest) => scan (col, rest::ds)
+    in
+      scan (0, [doc])
+    end
+
+    fun render sds =
+    let
+      fun go SFail = raise Fail "SFail in rendered DocStream.t!"
+        | go SEmpty = []
+        | go (SChar (c, rest)) = String.str c :: go rest
+        | go (SText (t, rest)) = t :: go rest
+        | go (SLine (i, rest)) = ("\n" ^ CharVector.tabulate (i, fn _ => #" ")) :: go rest
+        | go (SAnnPush (_, rest)) = go rest
+        | go (SAnnPop rest) = go rest
+    in
+      String.concat (go sds)
+    end
+
     fun renderIO (out, sds) =
     let
-      fun go sds =
-        case sds
-          of SFail => raise Fail "SFail!"
-           | SEmpty => ()
-           | SChar (c, rest) => (TextIO.output1 (out, c); go rest)
-           | SText (t, rest) => (TextIO.output (out, t); go rest)
-           | SLine (i, rest) => (TextIO.output (out, "\n"^CharVector.tabulate(i, fn _ => #" ")); go rest)
-           | SAnnPush (_, rest) => go rest
-           | SAnnPop rest => go rest
+      fun go SFail = raise Fail "SFail!"
+        | go SEmpty = ()
+        | go (SChar (c, rest)) = (TextIO.output1 (out, c); go rest)
+        | go (SText (t, rest)) = (TextIO.output (out, t); go rest)
+        | go (SLine (i, rest)) = (TextIO.output (out, "\n"^CharVector.tabulate(i, fn _ => #" ")); go rest)
+        | go (SAnnPush (_, rest)) = go rest
+        | go (SAnnPop rest) = go rest
     in
       go sds
     end
@@ -398,6 +448,7 @@ struct
         | next_token (DocStream.SLine (i, rest))      = SOME (TokLine i, rest)
         | next_token (DocStream.SAnnPush (ann, rest)) = SOME (TokAnnPush ann, rest)
         | next_token (DocStream.SAnnPop rest)         = SOME (TokAnnPop, rest)
+
       fun wrap [] = TEmpty
         | wrap [x] = x
         | wrap xs = TConcat xs
