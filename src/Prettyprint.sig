@@ -72,7 +72,7 @@ val hcat : 'a doc list -> 'a doc
 val vcat : 'a doc list -> 'a doc
 (* Concatenate horizontally as long as possible, continuing on the next lines *)
 val fillCat : 'a doc list -> 'a doc
-(* Try laying out vertically, falling back to vertically *)
+(* Try laying out horizontally, falling back to vertically *)
 val cat : 'a doc list -> 'a doc
 
 (*** Reactive combinators *)

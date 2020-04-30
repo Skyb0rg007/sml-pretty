@@ -118,7 +118,8 @@ struct
   (*** List functions *)
   (* Concatenate with a given concatenation function *)
   fun concatWith _ [] = Empty
-    | concatWith f (x::xs) = List.foldr f x xs
+    | concatWith _ [x] = x
+    | concatWith f (x::xs) = f (x, concatWith f xs)
   (* Appends the document to all but the last document in the list *)
   fun punctuate (_, []) = []
     | punctuate (_, [d]) = [d]
