@@ -1,5 +1,5 @@
 
-MOSMLC = mosmlc -orthodox -I ../$(BUILDDIR)
+MOSMLC = mosmlc -orthodox -I ../$(BUILDDIR) -I $(BUILDDIR)
 RM = rm -f
 RM_D = rm -fd
 MKDIR = mkdir -p
