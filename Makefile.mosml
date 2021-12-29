@@ -13,7 +13,7 @@ BUILDDIR = _build
 .PHONY: clean test
 .SUFFIXES: 
 
-all: $(BUILDDIR)/Prettyprint.uo $(BUILDDIR)/Ansi.uo
+all: $(BUILDDIR)/prettyprint.uo $(BUILDDIR)/ansi.uo
 
 test: $(BUILDDIR)/test
 	@case $(BUILDDIR) in         \
@@ -25,23 +25,23 @@ clean:
 	$(RM) $(BUILDDIR)/*.ui $(BUILDDIR)/*.uo $(BUILDDIR)/test
 	$(RM_D) $(BUILDDIR)
 
-$(BUILDDIR)/Prettyprint.ui: src/Prettyprint.sig
+$(BUILDDIR)/prettyprint.ui: src/prettyprint.sig
 	@$(MKDIR) $(BUILDDIR)
-	cd src && $(MOSMLC) -c Prettyprint.sig
-	$(MV) src/Prettyprint.ui $(BUILDDIR)
-$(BUILDDIR)/Prettyprint.uo: src/Prettyprint.sml $(BUILDDIR)/Prettyprint.ui
-	cd src && $(MOSMLC) -c Prettyprint.sml
-	$(MV) src/Prettyprint.uo $(BUILDDIR)
-$(BUILDDIR)/Ansi.ui: src/Ansi.sig $(BUILDDIR)/Prettyprint.ui
-	cd src && $(MOSMLC) -c Ansi.sig
-	$(MV) src/Ansi.ui $(BUILDDIR)
-$(BUILDDIR)/Ansi.uo: src/Ansi.sml $(BUILDDIR)/Prettyprint.ui $(BUILDDIR)/Ansi.ui
-	cd src && $(MOSMLC) -c Ansi.sml
-	$(MV) src/Ansi.uo $(BUILDDIR)
+	cd src && $(MOSMLC) -c prettyprint.sig
+	$(MV) src/prettyprint.ui $(BUILDDIR)
+$(BUILDDIR)/prettyprint.uo: src/prettyprint.sml $(BUILDDIR)/prettyprint.ui
+	cd src && $(MOSMLC) -c prettyprint.sml
+	$(MV) src/prettyprint.uo $(BUILDDIR)
+$(BUILDDIR)/ansi.ui: src/ansi.sig $(BUILDDIR)/prettyprint.ui
+	cd src && $(MOSMLC) -c ansi.sig
+	$(MV) src/ansi.ui $(BUILDDIR)
+$(BUILDDIR)/ansi.uo: src/ansi.sml $(BUILDDIR)/prettyprint.ui $(BUILDDIR)/ansi.ui
+	cd src && $(MOSMLC) -c ansi.sml
+	$(MV) src/ansi.uo $(BUILDDIR)
 
-$(BUILDDIR)/test.ui $(BUILDDIR)/test.uo: test/test.sml $(BUILDDIR)/Prettyprint.ui $(BUILDDIR)/Ansi.ui
+$(BUILDDIR)/test.ui $(BUILDDIR)/test.uo: test/test.sml $(BUILDDIR)/prettyprint.ui $(BUILDDIR)/ansi.ui
 	cd test && $(MOSMLC) -toplevel -c test.sml
 	$(MV) test/test.ui test/test.uo $(BUILDDIR)
-$(BUILDDIR)/test: $(BUILDDIR)/Prettyprint.uo $(BUILDDIR)/Ansi.uo $(BUILDDIR)/test.uo
-	$(MOSMLC) $(BUILDDIR)/Prettyprint.uo $(BUILDDIR)/Ansi.uo $(BUILDDIR)/test.uo -o $(BUILDDIR)/test
+$(BUILDDIR)/test: $(BUILDDIR)/prettyprint.uo $(BUILDDIR)/ansi.uo $(BUILDDIR)/test.uo
+	$(MOSMLC) $(BUILDDIR)/prettyprint.uo $(BUILDDIR)/ansi.uo $(BUILDDIR)/test.uo -o $(BUILDDIR)/test
 

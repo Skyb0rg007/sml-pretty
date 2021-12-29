@@ -25,7 +25,7 @@ fun pretty_exp x = case x
             align (str "let" ++ line ++ indent (4, vcat (map pdec decs)) ++ line ++ str "in" ++ line ++ indent (4, pretty_exp e) ++ line ++ str "end")
         end
 
-val exp = Abs ("x", Let ([("foo", Abs ("y", Var "y"))], App (Var "foo", Int 1)))
+val exp = Abs ("x", Let ([("fool", Abs ("y", Var "y"))], App (Var "foo", Int 1)))
 val doc = pretty_exp exp 
 val () = Ansi.renderIO (TextIO.stdOut, layoutPretty (PageWidth.default, doc))
          handle Fail msg => print ("Fail: " ^ msg ^ "\n")

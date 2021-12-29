@@ -9,7 +9,7 @@ BUILDDIR = _build
 ##
 
 .DEFAULT: all
-.PHONY: clean
+.PHONY: clean test
 .SUFFIXES:
 
 all:
